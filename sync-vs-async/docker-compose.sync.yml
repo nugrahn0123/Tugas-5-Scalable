@@ -1,0 +1,54 @@
+version: '3.8'
+
+# ============================================
+#  SEMI-SYNC Replication
+#  Master menunggu minimal 1 slave konfirmasi
+#  sebelum commit dianggap sukses
+# ============================================
+
+networks:
+  sync-network:
+    driver: bridge
+
+services:
+  master:
+    image: mysql:8.0
+    container_name: semisync-master
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: demo_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: apppass
+    volumes:
+      - ./master/my-sync.cnf:/etc/mysql/conf.d/replication.cnf:ro
+      - ./master/init:/docker-entrypoint-initdb.d:ro
+      - sync-master-data:/var/lib/mysql
+    ports:
+      - "3322:3306"
+    networks:
+      - sync-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  slave:
+    image: mysql:8.0
+    container_name: semisync-slave
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - ./slave/my-sync.cnf:/etc/mysql/conf.d/replication.cnf:ro
+      - sync-slave-data:/var/lib/mysql
+    ports:
+      - "3323:3306"
+    depends_on:
+      master:
+        condition: service_healthy
+    networks:
+      - sync-network
+
+volumes:
+  sync-master-data:
+  sync-slave-data:

@@ -1,0 +1,53 @@
+version: '3.8'
+
+# ============================================
+#  ASYNC Replication (DEFAULT MySQL behavior)
+#  Master commit tanpa menunggu konfirmasi slave
+# ============================================
+
+networks:
+  async-network:
+    driver: bridge
+
+services:
+  master:
+    image: mysql:8.0
+    container_name: async-master
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: demo_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: apppass
+    volumes:
+      - ./master/my.cnf:/etc/mysql/conf.d/replication.cnf:ro
+      - ./master/init:/docker-entrypoint-initdb.d:ro
+      - async-master-data:/var/lib/mysql
+    ports:
+      - "3320:3306"
+    networks:
+      - async-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  slave:
+    image: mysql:8.0
+    container_name: async-slave
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - ./slave/my.cnf:/etc/mysql/conf.d/replication.cnf:ro
+      - async-slave-data:/var/lib/mysql
+    ports:
+      - "3321:3306"
+    depends_on:
+      master:
+        condition: service_healthy
+    networks:
+      - async-network
+
+volumes:
+  async-master-data:
+  async-slave-data:

@@ -1,0 +1,26 @@
+[mysqld]
+# =============================================
+#  MASTER - SEMI-SYNCHRONOUS
+#  Master menunggu ACK dari slave sebelum commit
+#  Jika slave tidak merespons dalam timeout,
+#  otomatis fallback ke async
+# =============================================
+
+server-id         = 1
+log_bin           = mysql-bin
+binlog_format     = ROW
+binlog_do_db      = demo_db
+expire_logs_days  = 7
+
+# Load plugin semi-sync untuk source (master)
+plugin_load_add                   = rpl_semi_sync_source=semisync_source.so
+
+# Aktifkan semi-sync di master
+rpl_semi_sync_source_enabled      = ON
+
+# Waktu tunggu ACK dari slave (ms)
+# Jika slave tidak merespons dalam 5 detik, fallback ke async
+rpl_semi_sync_source_timeout      = 5000
+
+# Jumlah slave yang harus ACK sebelum commit dianggap sukses
+rpl_semi_sync_source_wait_for_replica_count = 1

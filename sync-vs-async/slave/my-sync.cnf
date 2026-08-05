@@ -1,0 +1,15 @@
+[mysqld]
+# =============================================
+#  SLAVE - SEMI-SYNCHRONOUS
+# =============================================
+
+server-id             = 2
+relay_log             = relay-bin
+read_only             = ON
+log_replica_updates   = ON
+
+# Load plugin semi-sync untuk replica (slave)
+plugin_load_add                    = rpl_semi_sync_replica=semisync_replica.so
+
+# Aktifkan semi-sync di slave
+rpl_semi_sync_replica_enabled      = ON
